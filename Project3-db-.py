@@ -28,7 +28,7 @@ def createScheduleTable(mydb):
         print("Table SCHEDULE created successfully.")
     except Error as e:
         print(e)
-
+#PART II Simple queries with schedule
 def queryCoursesByDepartment(mydb, department):
     """
     Query and return courses offered by a specific department from the SCHEDULE table.
@@ -146,6 +146,7 @@ def queryCoursesByProfessor(mydb, professor_name):
     except Error as e:
         print(e)
 
+#the Course Registration
 
 def createStudentTable(mydb):
     mycursor = mydb.cursor()
@@ -226,6 +227,7 @@ def populateSampleData(mydb):
     for student in students:
         insertStudent(mydb, *student)
 
+    #I don't think this one works! I tried
     enrollments = [
         (1, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
         (2, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'WaitList'),
@@ -252,6 +254,24 @@ def insertScheduleRecord(mydb, department, course_code, course_title, instructor
     except Error as e:
         print(e)
 
+
+# V- Complex Queries
+
+def queryStudentsInCourse(mydb, course_code):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT s.StudentID, s.Fname, s.Lname
+    FROM STUDENT s
+    JOIN ENROLLMENT e ON s.StudentID = e.StudentID
+    WHERE e.CourseID = (SELECT CourseID FROM SCHEDULE WHERE CourseCode = %s);
+    """
+    try:
+        mycursor.execute(query, (course_code,))
+        for student in mycursor.fetchall():
+            print(student)
+        print("Table StudentsInCourse created successfully.")
+    except Error as e:
+        print(e)
 
 def selectSchedule(mydb):
     mycursor = mydb.cursor()
@@ -305,7 +325,7 @@ def main():
 
         filepath = 'C:/Users/test1/PycharmProjects/9/5/pythonProject3/Course Schedule.csv'
         processCsvFile(mydb, filepath)
-        #populateSampleData(mydb)
+        populateSampleData(mydb)
         #selectSchedule(mydb)
 
         #Query a: Courses in a specific deparment
@@ -323,7 +343,7 @@ def main():
         # Query c: Courses for General Education Requirement
         gen_ed_departments = ['ANT', 'ECO', 'POL', 'PSY', 'SOC']
         print("\nCourses for Social Sciences general education requirement:")
-        queryCoursesForGenEd(mydb, gen_ed_departments)
+        #queryCoursesForGenEd(mydb, gen_ed_departments)
 
         # Query d: Courses for DCP Requirement
         print("\nCourses for DCP Requirement:")
@@ -334,6 +354,7 @@ def main():
         print(f"\nCourses offered by {favorite_professor}:")
         #queryCoursesByProfessor(mydb, favorite_professor)
 
+        #queryStudentsInCourse(mydb, "CS135")
 
     except Error as e:
         print(e)
