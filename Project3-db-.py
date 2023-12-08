@@ -90,8 +90,9 @@ def queryCoursesForGenEd(mydb, departments):
     query = f"""
     SELECT CourseCode, CourseTitle, Department 
     FROM SCHEDULE 
-    WHERE Department IN ({format_strings})
+    WHERE CourseCode IN ({format_strings})
     """
+    #You have to change format_strings in mySQL to literal string CourseCodes
     try:
         mycursor.execute(query, tuple(departments))
         courses = mycursor.fetchall()
