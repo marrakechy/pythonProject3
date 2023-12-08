@@ -1,11 +1,14 @@
-import csv
 from mysql.connector import connect, Error
+import csv
+
 
 def createScheduleTable(mydb):
     mycursor = mydb.cursor()
     query = """
+    DROP TABLE IF EXISTS ENROLLMENT;
     DROP TABLE IF EXISTS SCHEDULE;
     CREATE TABLE SCHEDULE (
+        CourseID INT AUTO_INCREMENT PRIMARY KEY,
         Department VARCHAR(255),
         CourseCode VARCHAR(255),
         Section VARCHAR(10),
@@ -22,9 +25,126 @@ def createScheduleTable(mydb):
     """
     try:
         mycursor.execute(query, multi=True)
-        #print("Table SCHEDULE created successfully.")
+        print("Table SCHEDULE created successfully.")
     except Error as e:
         print(e)
+
+def queryCoursesByDepartment(mydb, department):
+    """
+    Query and return courses offered by a specific department from the SCHEDULE table.
+
+    :param mydb: MySQL database connection object.
+    :param department: The department to query courses for.
+    :return: None, but prints the courses offered by the department.
+    """
+    mycursor = mydb.cursor()
+    query = """
+    SELECT CourseCode, CourseTitle, Instructor, Days, BeginTime, EndTime, BuildingRoom, Credits, Year, Term
+    FROM SCHEDULE
+    WHERE Department = %s
+    """
+    try:
+        mycursor.execute(query, (department,))
+        courses = mycursor.fetchall()
+        print("Table created successfully.")
+        for course in courses:
+            print(course)
+    except Error as e:
+        print(e)
+
+def queryCoursesByTimeBlock(mydb, days, begin_time, end_time):
+    """
+    Query and return courses offered in a specific time block.
+
+    :param mydb: MySQL database connection object.
+    :param days: Days of the week (e.g., 'MWF', 'TR').
+    :param begin_time: Start time of the time block.
+    :param end_time: End time of the time block.
+    :return: None, but prints the courses available in the time block.
+    """
+    mycursor = mydb.cursor()
+    query = """
+    SELECT CourseCode, CourseTitle, Instructor, Days, BeginTime, EndTime 
+    FROM SCHEDULE 
+    WHERE Days = %s AND BeginTime >= %s AND EndTime <= %s
+    """
+    try:
+        mycursor.execute(query, (days, begin_time, end_time))
+        courses = mycursor.fetchall()
+        print("Table created successfully.")
+        for course in courses:
+            print(course)
+    except Error as e:
+        print(e)
+
+def queryCoursesForGenEd(mydb, departments):
+    """
+    Query and return courses that satisfy a general education requirement.
+
+    :param mydb: MySQL database connection object.
+    :param departments: List of department codes for the general education requirement (e.g., ['ANT', 'ECO']).
+    :return: None, but prints the courses that satisfy the requirement.
+    """
+    mycursor = mydb.cursor()
+    format_strings = ','.join(['%s'] * len(departments))
+    query = f"""
+    SELECT CourseCode, CourseTitle, Department 
+    FROM SCHEDULE 
+    WHERE Department IN ({format_strings})
+    """
+    try:
+        mycursor.execute(query, tuple(departments))
+        courses = mycursor.fetchall()
+        print("Table created successfully.")
+        for course in courses:
+            print(course)
+    except Error as e:
+        print(e)
+def queryCoursesForDCP(mydb):
+    """
+    Query and return courses that satisfy the DCP requirement.
+
+    :param mydb: MySQL database connection object.
+    :return: None, but prints the courses that satisfy the DCP requirement.
+    """
+    mycursor = mydb.cursor()
+    query = """
+    SELECT CourseCode, CourseTitle, Department 
+    FROM SCHEDULE 
+    WHERE CourseCode LIKE '%6' OR CourseCode LIKE '%7' OR CourseCode LIKE '%8'
+    """
+    try:
+        mycursor.execute(query)
+        courses = mycursor.fetchall()
+        print("Table created successfully.")
+        for course in courses:
+            print(course)
+    except Error as e:
+        print(e)
+
+def queryCoursesByProfessor(mydb, professor_name):
+    """
+    Query and return courses offered by a specific professor.
+
+    :param mydb: MySQL database connection object.
+    :param professor_name: The name of the professor.
+    :return: None, but prints the courses offered by the professor.
+    """
+    mycursor = mydb.cursor()
+    query = """
+    SELECT CourseCode, CourseTitle, Instructor 
+    FROM SCHEDULE 
+    WHERE Instructor = %s
+    """
+    try:
+        mycursor.execute(query, (professor_name,))
+        courses = mycursor.fetchall()
+        print("Table Professor created successfully.")
+        for course in courses:
+            print(course)
+    except Error as e:
+        print(e)
+
 
 def createStudentTable(mydb):
     mycursor = mydb.cursor()
@@ -54,12 +174,13 @@ def createEnrollmentTable(mydb):
     DROP TABLE IF EXISTS ENROLLMENT;
     CREATE TABLE ENROLLMENT (
         StudentID INT,
-        CourseID VARCHAR(255),
+        CourseID INT,
         Status ENUM('Active', 'WaitList', 'Complete'),
         ClassSize INT DEFAULT 100,
         PRIMARY KEY (StudentID, CourseID),
-        FOREIGN KEY (StudentID) REFERENCES STUDENT(StudentID),
-        FOREIGN KEY (CourseID) REFERENCES SCHEDULE(CourseCode)
+         FOREIGN KEY (CourseID) REFERENCES SCHEDULE(CourseID),
+        FOREIGN KEY (StudentID) REFERENCES STUDENT(StudentID)
+       
     );
     """
     try:
@@ -83,8 +204,8 @@ def insertStudent(mydb, student_number, fname, lname, class_year, major1, major2
 def insertEnrollment(mydb, student_id, course_id, status):
     mycursor = mydb.cursor()
     query = """INSERT INTO ENROLLMENT 
-    (StudentID, CourseID, Status)
-    VALUES (%s, %s, %s);"""
+    (StudentID, CourseID, Status, classSize)
+    VALUES (%s, %s, %s, %s);"""
     values = (student_id, course_id, status)
     try:
         mycursor.execute(query, values)
@@ -95,22 +216,28 @@ def insertEnrollment(mydb, student_id, course_id, status):
 def populateSampleData(mydb):
     #let's insert sample students
     students = [
-        ('1814624', 'Aasmin', 'Lama Tamang', 2023, 'Computer Science', 'Math', 'African American Studies', 'D Hughes'),
-
+        ('1814624', 'Aasmin', 'Lama Tamang', 2027, 'Computer Science', 'Math', 'African American Studies', 'D Hughes'),
+        ('1814628', 'Brahim', 'El Marrakechy', 2024, 'Computer Science', None, None, 'D Hughes'),
+        ('1672830', 'Andrew', 'Tate', 2025, 'Mathematics', None, 'Computer Science', 'L McQueen'),
+        ('1589372', 'Danny', 'Mullen', 2024, 'Economics', 'Data Science', None, 'L McQueen'),
+        ('1766691', 'Mia', 'Daniel', 2025, 'Biology', None, None, 'CJ'),
     ]
     for student in students:
         insertStudent(mydb, *student)
 
-    #sample enrollments
     enrollments = [
-        (1, 'CS220', 'Active'),
+        (1, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+        (2, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'WaitList'),
+        (3, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+        (4, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+        (5, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
     ]
     for enrollment in enrollments:
         insertEnrollment(mydb, *enrollment)
 
 
+
 def insertScheduleRecord(mydb, department, course_code, course_title, instructor, days, begin_time, end_time, building_room, credits, year, term):
-    #function implementation
 
     mycursor = mydb.cursor()
     query = """INSERT INTO SCHEDULE 
@@ -161,6 +288,7 @@ def processCsvFile(mydb, filepath):
             insertScheduleRecord(mydb, department, course_code, course_title, row[1], row[2], row[3], row[4], row[5], row[6], 2021, 'Fall')
 
 
+
 def main():
     try:
         mydb = connect(
@@ -176,9 +304,35 @@ def main():
 
         filepath = 'C:/Users/test1/PycharmProjects/9/5/pythonProject3/Course Schedule.csv'
         processCsvFile(mydb, filepath)
+        #populateSampleData(mydb)
+        #selectSchedule(mydb)
 
-        populateSampleData(mydb)
-        selectSchedule(mydb)
+        #Query a: Courses in a specific deparment
+        department_to_query = "Accounting"
+        print(f"Courses in the {department_to_query} department:")
+        #queryCoursesByDepartment(mydb, department_to_query)
+
+        # Query b: Courses available at a given time-block
+        begin_time = "9:00 AM"
+        end_time = "9:50 AM"
+        days = "MWF"
+        print(f"\nCourses available at {begin_time}:")
+        #queryCoursesByTimeBlock(mydb, days, begin_time, end_time)
+
+        # Query c: Courses for General Education Requirement
+        gen_ed_departments = ['ANT', 'ECO', 'POL', 'PSY', 'SOC']
+        print("\nCourses for Social Sciences general education requirement:")
+        queryCoursesForGenEd(mydb, gen_ed_departments)
+
+        # Query d: Courses for DCP Requirement
+        print("\nCourses for DCP Requirement:")
+        #queryCoursesForDCP(mydb)
+
+        # Query e: Courses offered by a favorite professor
+        favorite_professor = "C Johnson"
+        print(f"\nCourses offered by {favorite_professor}:")
+        #queryCoursesByProfessor(mydb, favorite_professor)
+
 
     except Error as e:
         print(e)
