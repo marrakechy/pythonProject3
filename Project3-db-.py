@@ -1,6 +1,8 @@
 from mysql.connector import connect, Error
 import csv
-
+import pandas as pd
+import random
+import string
 
 def createScheduleTable(mydb):
     mycursor = mydb.cursor()
@@ -41,7 +43,7 @@ def queryCoursesByDepartment(mydb, department):
     query = """
     SELECT CourseCode, CourseTitle, Instructor, Days, BeginTime, EndTime, BuildingRoom, Credits, Year, Term
     FROM SCHEDULE
-    WHERE Department = %s
+    WHERE CourseCode = %s
     """
     try:
         mycursor.execute(query, (department,))
@@ -195,7 +197,8 @@ def insertStudent(mydb, student_number, fname, lname, class_year, major1, major2
     mycursor = mydb.cursor()
     query = """INSERT INTO STUDENT 
     (StudentNumber, Fname, Lname, ClassYear, Major1, Major2, Minor1, Advisor)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"""
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE StudentID = StudentID;""" #this line is updated to anonymization function
     values = (student_number, fname, lname, class_year, major1, major2, minor1, advisor)
     try:
         mycursor.execute(query, values)
@@ -254,24 +257,94 @@ def insertScheduleRecord(mydb, department, course_code, course_title, instructor
     except Error as e:
         print(e)
 
+#Anonymize
 
-# V- Complex Queries
+def generate_random_id():
+    return random.randint(10000000, 99999999)
 
-def queryStudentsInCourse(mydb, course_code):
+def generate_random_name():
+    first_names = ["Alice", "Bob", "Carol", "Dave"]  # Add more names
+    last_names = ["Smith", "Johnson", "Lee", "Garcia"]  # Add more names
+    return random.choice(first_names), random.choice(last_names)
+
+# Reading the registration data
+registration_df = pd.read_csv('Registration.csv')
+
+# Anonymize the data
+unique_ids = registration_df['ID'].unique()
+id_map = {old_id: generate_random_id() for old_id in unique_ids}
+name_map = {old_id: generate_random_name() for old_id in unique_ids}
+
+registration_df['ID'] = registration_df['ID'].map(id_map)
+registration_df['F_Name'] = registration_df['ID'].map(lambda x: name_map[x][0])
+registration_df['L_Name'] = registration_df['ID'].map(lambda x: name_map[x][1])
+
+
+
+
+# New functionality
+
+
+def createPreRequisiteTable(mydb):
     mycursor = mydb.cursor()
     query = """
-    SELECT s.StudentID, s.Fname, s.Lname
-    FROM STUDENT s
-    JOIN ENROLLMENT e ON s.StudentID = e.StudentID
-    WHERE e.CourseID = (SELECT CourseID FROM SCHEDULE WHERE CourseCode = %s);
+    DROP TABLE IF EXISTS PREREQUISITE;
+    CREATE TABLE PREREQUISITE (
+        CourseID INT,
+        PrerequisiteID INT,
+        PRIMARY KEY (CourseID, PrerequisiteID),
+        FOREIGN KEY (CourseID) REFERENCES SCHEDULE(CourseID),
+        FOREIGN KEY (PrerequisiteID) REFERENCES SCHEDULE(CourseID)
+    );
     """
     try:
-        mycursor.execute(query, (course_code,))
-        for student in mycursor.fetchall():
-            print(student)
-        print("Table StudentsInCourse created successfully.")
+        mycursor.execute(query, multi=True)
+        print("Table PREREQUISITE created successfully.")
     except Error as e:
         print(e)
+
+def insertPreRequisite(mydb, course_id, prerequisite_id):
+    mycursor = mydb.cursor()
+    query = """INSERT INTO PREREQUISITE (CourseID, PrerequisiteID) VALUES (%s, %s);"""
+    values = (course_id, prerequisite_id)
+    try:
+        mycursor.execute(query, values)
+        mydb.commit()
+        print(f"Pre-requisite for course {course_id} added successfully.")
+    except Error as e:
+        print(e)
+
+def Enrollment(mydb, student_id, course_id, status):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT PrerequisiteID
+    FROM PREREQUISITE
+    WHERE CourseID = %s
+    """
+    try:
+        mycursor.execute(query, (course_id,))
+        prerequisites = mycursor.fetchall()
+
+        for prereq in prerequisites:
+            prereq_query = """
+            SELECT *
+            FROM ENROLLMENT
+            WHERE StudentID = %s AND CourseID = %s AND Status = 'Complete'
+            """
+            mycursor.execute(prereq_query, (student_id, prereq[0]))
+            if not mycursor.fetchone():
+                print(f"Cannot enroll, prerequisite CourseID {prereq[0]} not met for CourseID {course_id}")
+                return
+
+        enrollment_query = """INSERT INTO ENROLLMENT (StudentID, CourseID, Status) VALUES (%s, %s, %s);"""
+        mycursor.execute(enrollment_query, (student_id, course_id, status))
+        mydb.commit()
+        print("Enrollment successful.")
+    except Error as e:
+        print(e)
+
+
+
 
 def selectSchedule(mydb):
     mycursor = mydb.cursor()
@@ -309,7 +382,6 @@ def processCsvFile(mydb, filepath):
             insertScheduleRecord(mydb, department, course_code, course_title, row[1], row[2], row[3], row[4], row[5], row[6], 2021, 'Fall')
 
 
-
 def main():
     try:
         mydb = connect(
@@ -325,13 +397,13 @@ def main():
 
         filepath = 'C:/Users/test1/PycharmProjects/9/5/pythonProject3/Course Schedule.csv'
         processCsvFile(mydb, filepath)
-        populateSampleData(mydb)
+        #populateSampleData(mydb)
         #selectSchedule(mydb)
 
         #Query a: Courses in a specific deparment
-        department_to_query = "Accounting"
+        department_to_query = "ACC"
         print(f"Courses in the {department_to_query} department:")
-        #queryCoursesByDepartment(mydb, department_to_query)
+        queryCoursesByDepartment(mydb, department_to_query)
 
         # Query b: Courses available at a given time-block
         begin_time = "9:00 AM"
@@ -355,6 +427,13 @@ def main():
         #queryCoursesByProfessor(mydb, favorite_professor)
 
         #queryStudentsInCourse(mydb, "CS135")
+
+        createPreRequisiteTable(mydb)
+        #adding pre-requisites (use actual CourseIDs)
+        insertPreRequisite(mydb, course_id=135, prerequisite_id=125) # Example
+
+        #enrolling a student in a course with and without meeting pre-requisites
+        Enrollment(mydb, student_id=1, course_id=135, status='Active') # Example
 
     except Error as e:
         print(e)
