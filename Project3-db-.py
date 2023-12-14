@@ -148,7 +148,7 @@ def queryCoursesByProfessor(mydb, professor_name):
     except Error as e:
         print(e)
 
-#the Course Registration
+#III- the Course Registration
 
 def createStudentTable(mydb):
     mycursor = mydb.cursor()
@@ -182,7 +182,7 @@ def createEnrollmentTable(mydb):
         Status ENUM('Active', 'WaitList', 'Complete'),
         ClassSize INT DEFAULT 100,
         PRIMARY KEY (StudentID, CourseID),
-         FOREIGN KEY (CourseID) REFERENCES SCHEDULE(CourseID),
+        FOREIGN KEY (CourseID) REFERENCES SCHEDULE(CourseID),
         FOREIGN KEY (StudentID) REFERENCES STUDENT(StudentID)
        
     );
@@ -193,13 +193,13 @@ def createEnrollmentTable(mydb):
     except Error as e:
         print(e)
 
-def insertStudent(mydb, student_number, fname, lname, class_year, major1, major2, minor1, advisor):
+def insertStudent(mydb, studentID, fname, lname, class_year, major1, major2, minor1, advisor):
     mycursor = mydb.cursor()
     query = """INSERT INTO STUDENT 
     (StudentNumber, Fname, Lname, ClassYear, Major1, Major2, Minor1, Advisor)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ON DUPLICATE KEY UPDATE StudentID = StudentID;""" #this line is updated to anonymization function
-    values = (student_number, fname, lname, class_year, major1, major2, minor1, advisor)
+    values = (studentID, fname, lname, class_year, major1, major2, minor1, advisor)
     try:
         mycursor.execute(query, values)
         mydb.commit()
@@ -242,7 +242,6 @@ def populateSampleData(mydb):
         insertEnrollment(mydb, *enrollment)
 
 
-
 def insertScheduleRecord(mydb, department, course_code, course_title, instructor, days, begin_time, end_time, building_room, credits, year, term):
 
     mycursor = mydb.cursor()
@@ -257,18 +256,20 @@ def insertScheduleRecord(mydb, department, course_code, course_title, instructor
     except Error as e:
         print(e)
 
-#Anonymize
+#IV- Anonymize and load student data
 
 def generate_random_id():
     return random.randint(10000000, 99999999)
 
 def generate_random_name():
-    first_names = ["Alice", "Bob", "Carol", "Dave"]  # Add more names
-    last_names = ["Smith", "Johnson", "Lee", "Garcia"]  # Add more names
+    first_names = ["Alice", "Bob", "Carol", "Dave"]
+    last_names = ["Smith", "Johnson", "Lee", "Garcia"]
     return random.choice(first_names), random.choice(last_names)
 
 # Reading the registration data
 registration_df = pd.read_csv('Registration.csv')
+
+
 
 # Anonymize the data
 unique_ids = registration_df['ID'].unique()
@@ -279,11 +280,18 @@ registration_df['ID'] = registration_df['ID'].map(id_map)
 registration_df['F_Name'] = registration_df['ID'].map(lambda x: name_map[x][0])
 registration_df['L_Name'] = registration_df['ID'].map(lambda x: name_map[x][1])
 
+def insertAnonymizedEnrollmentData(mydb, registration_df):
+    for index, row in registration_df.iterrows():
+        insertStudent(mydb, row['ID'], row['F_Name'], row['L_Name'],
+                      row['Class'], row['Major 1'], row['Major 2'],
+                      row['Minor 1'], row['Advisor'])
+        # Insert enrollments here (assuming you have a function for this)
+        # insertEnrollment(mydb, row['ID'], course_code)
+
+    print("Data inserted successfully.")
 
 
-
-# New functionality
-
+# VI- New functionality (pre requiisites)
 
 def createPreRequisiteTable(mydb):
     mycursor = mydb.cursor()
@@ -395,8 +403,8 @@ def main():
         #createStudentTable(mydb)
         #createEnrollmentTable(mydb)
 
-        filepath = 'C:/Users/test1/PycharmProjects/9/5/pythonProject3/Course Schedule.csv'
-        processCsvFile(mydb, filepath)
+        #filepath = 'C:/Users/test1/PycharmProjects/9/5/pythonProject3/Course Schedule.csv'
+        #processCsvFile(mydb, filepath)
         #populateSampleData(mydb)
         #selectSchedule(mydb)
 
@@ -428,14 +436,19 @@ def main():
 
         #queryStudentsInCourse(mydb, "CS135")
 
-        createPreRequisiteTable(mydb)
+        registration_df = pd.read_csv('Registration.csv')
+        #anonymize data as shown above
+        insertAnonymizedEnrollmentData(mydb, registration_df)
+
+        #createPreRequisiteTable(mydb)
         #adding pre-requisites (use actual CourseIDs)
-        insertPreRequisite(mydb, course_id=135, prerequisite_id=125) # Example
+        #insertPreRequisite(mydb, course_id=135, prerequisite_id=125)
 
         #enrolling a student in a course with and without meeting pre-requisites
-        Enrollment(mydb, student_id=1, course_id=135, status='Active') # Example
+        #Enrollment(mydb, student_id=1, course_id=135, status='Active')
 
     except Error as e:
         print(e)
 
 main()
+
