@@ -230,7 +230,7 @@ def populateSampleData(mydb):
     for student in students:
         insertStudent(mydb, *student)
 
-    #I don't think this one works! I tried
+
     enrollments = [
         (1, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
         (2, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'WaitList'),
@@ -285,8 +285,16 @@ def insertAnonymizedEnrollmentData(mydb, registration_df):
         insertStudent(mydb, row['ID'], row['F_Name'], row['L_Name'],
                       row['Class'], row['Major 1'], row['Major 2'],
                       row['Minor 1'], row['Advisor'])
-        # Insert enrollments here (assuming you have a function for this)
-        # insertEnrollment(mydb, row['ID'], course_code)
+
+        enrollments = [
+            (1, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+            (2, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'WaitList'),
+            (3, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+            (4, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+            (5, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+        ]
+        for enrollment in enrollments:
+            insertEnrollment(mydb, *enrollment)
 
     print("Data inserted successfully.")
 
