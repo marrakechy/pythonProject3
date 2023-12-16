@@ -296,6 +296,7 @@ def insertAnonymizedEnrollmentData(mydb, registration_df):
         for enrollment in enrollments:
             insertEnrollment(mydb, *enrollment)
 
+
     print("Data inserted successfully.")
 
 
