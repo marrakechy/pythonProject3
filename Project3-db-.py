@@ -267,37 +267,36 @@ def generate_random_name():
     return random.choice(first_names), random.choice(last_names)
 
 # Reading the registration data
-registration_df = pd.read_csv('Registration.csv')
-
+#registration_df = pd.read_csv('Registration.csv')
 
 
 # Anonymize the data
-unique_ids = registration_df['ID'].unique()
-id_map = {old_id: generate_random_id() for old_id in unique_ids}
-name_map = {old_id: generate_random_name() for old_id in unique_ids}
-
-registration_df['ID'] = registration_df['ID'].map(id_map)
-registration_df['F_Name'] = registration_df['ID'].map(lambda x: name_map[x][0])
-registration_df['L_Name'] = registration_df['ID'].map(lambda x: name_map[x][1])
-
-def insertAnonymizedEnrollmentData(mydb, registration_df):
-    for index, row in registration_df.iterrows():
-        insertStudent(mydb, row['ID'], row['F_Name'], row['L_Name'],
-                      row['Class'], row['Major 1'], row['Major 2'],
-                      row['Minor 1'], row['Advisor'])
-
-        enrollments = [
-            (1, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
-            (2, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'WaitList'),
-            (3, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
-            (4, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
-            (5, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
-        ]
-        for enrollment in enrollments:
-            insertEnrollment(mydb, *enrollment)
-
-
-    print("Data inserted successfully.")
+# unique_ids = registration_df['ID'].unique()
+# id_map = {old_id: generate_random_id() for old_id in unique_ids}
+# name_map = {old_id: generate_random_name() for old_id in unique_ids}
+#
+# registration_df['ID'] = registration_df['ID'].map(id_map)
+# registration_df['F_Name'] = registration_df['ID'].map(lambda x: name_map[x][0])
+# registration_df['L_Name'] = registration_df['ID'].map(lambda x: name_map[x][1])
+#
+# def insertAnonymizedEnrollmentData(mydb, registration_df):
+#     for index, row in registration_df.iterrows():
+#         insertStudent(mydb, row['ID'], row['F_Name'], row['L_Name'],
+#                       row['Class'], row['Major 1'], row['Major 2'],
+#                       row['Minor 1'], row['Advisor'])
+#
+#         enrollments = [
+#             (1, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+#             (2, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'WaitList'),
+#             (3, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+#             (4, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+#             (5, 'CS 220' 'CS 125' 'CS 135' 'CS 215', 'Active'),
+#         ]
+#         for enrollment in enrollments:
+#             insertEnrollment(mydb, *enrollment)
+#
+#
+#     print("Data inserted successfully.")
 
 
 # VI- New functionality (pre requiisites)
@@ -445,9 +444,9 @@ def main():
 
         #queryStudentsInCourse(mydb, "CS135")
 
-        registration_df = pd.read_csv('Registration.csv')
+        #registration_df = pd.read_csv('Registration.csv')
         #anonymize data as shown above
-        insertAnonymizedEnrollmentData(mydb, registration_df)
+        #insertAnonymizedEnrollmentData(mydb, registration_df)
 
         #createPreRequisiteTable(mydb)
         #adding pre-requisites (use actual CourseIDs)
