@@ -266,6 +266,9 @@ def generate_random_name():
     last_names = ["Smith", "Johnson", "Lee", "Garcia"]
     return random.choice(first_names), random.choice(last_names)
 
+#I had problems with this in terms of reading the file utf-8 !!
+
+
 # Reading the registration data
 #registration_df = pd.read_csv('Registration.csv')
 
