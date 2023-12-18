@@ -541,12 +541,22 @@ def main():
         #anonymize data as shown above
         #insertAnonymizedEnrollmentData(mydb, registration_df)
 
+        #queryStudentsInCourse(mydb, "CS135")
+        #queryAvgClassSizeByDepartment(mydb)
+        #queryTopEnrolledCourses(mydb)
+        #queryStudentCountByYear(mydb)
+        #queryCoursesByTerm(mydb, "Fall 2023")
+        #queryWaitlistedStudents(mydb, "CS125")
+
         #createPreRequisiteTable(mydb)
         #adding pre-requisites (use actual CourseIDs)
         #insertPreRequisite(mydb, course_id=135, prerequisite_id=125)
 
         #enrolling a student in a course with and without meeting pre-requisites
         #Enrollment(mydb, student_id=1, course_id=135, status='Active')
+
+
+
 
     except Error as e:
         print(e)
