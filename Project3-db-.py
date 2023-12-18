@@ -299,6 +299,100 @@ def generate_random_name():
 #     print("Data inserted successfully.")
 
 
+#V Complex Queries
+
+def queryStudentsInCourse(mydb, course_code):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT s.StudentID, s.Fname, s.Lname
+    FROM STUDENT s
+    JOIN ENROLLMENT e ON s.StudentID = e.StudentID
+    WHERE e.CourseID = (SELECT CourseID FROM SCHEDULE WHERE CourseCode = %s);
+    """
+    try:
+        mycursor.execute(query, (course_code,))
+        for student in mycursor.fetchall():
+            print(student)
+    except Error as e:
+        print(e)
+
+def queryAvgClassSizeByDepartment(mydb):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT d.Department, AVG(e.ClassSize) as AvgClassSize
+    FROM SCHEDULE d
+    JOIN ENROLLMENT e ON d.CourseID = e.CourseID
+    GROUP BY d.Department;
+    """
+    try:
+        mycursor.execute(query)
+        for avg in mycursor.fetchall():
+            print(avg)
+    except Error as e:
+        print(e)
+
+def queryTopEnrolledCourses(mydb):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT c.CourseCode, c.CourseTitle, COUNT(e.StudentID) as Enrollment
+    FROM SCHEDULE c
+    JOIN ENROLLMENT e ON c.CourseID = e.CourseID
+    GROUP BY c.CourseCode, c.CourseTitle
+    ORDER BY Enrollment DESC
+    LIMIT 5;
+    """
+    try:
+        mycursor.execute(query)
+        for course in mycursor.fetchall():
+            print(course)
+    except Error as e:
+        print(e)
+
+def queryStudentCountByYear(mydb):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT ClassYear, COUNT(*) as NumberOfStudents
+    FROM STUDENT
+    GROUP BY ClassYear;
+    """
+    try:
+        mycursor.execute(query)
+        for count in mycursor.fetchall():
+            print(count)
+    except Error as e:
+        print(e)
+
+def queryCoursesByTerm(mydb, term):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT CourseCode, CourseTitle
+    FROM SCHEDULE
+    WHERE Term = %s;
+    """
+    try:
+        mycursor.execute(query, (term,))
+        for course in mycursor.fetchall():
+            print(course)
+    except Error as e:
+        print(e)
+
+def queryWaitlistedStudents(mydb, course_code):
+    mycursor = mydb.cursor()
+    query = """
+    SELECT s.StudentID, s.Fname, s.Lname
+    FROM STUDENT s
+    JOIN ENROLLMENT e ON s.StudentID = e.StudentID
+    WHERE e.Status = 'WaitList' AND e.CourseID = (SELECT CourseID FROM SCHEDULE WHERE CourseCode = %s);
+    """
+    try:
+        mycursor.execute(query, (course_code,))
+        for student in mycursor.fetchall():
+            print(student)
+    except Error as e:
+        print(e)
+
+
+
 # VI- New functionality (pre requiisites)
 
 def createPreRequisiteTable(mydb):
@@ -358,7 +452,6 @@ def Enrollment(mydb, student_id, course_id, status):
         print("Enrollment successful.")
     except Error as e:
         print(e)
-
 
 
 
